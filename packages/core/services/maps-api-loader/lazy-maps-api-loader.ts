@@ -85,7 +85,7 @@ export class LazyMapsAPILoader extends MapsAPILoader {
   protected _config: LazyMapsAPILoaderConfigLiteral;
   protected _windowRef: WindowRef;
   protected _documentRef: DocumentRef;
-  protected _platformId: Object,
+  protected _platformId: Object;
   protected readonly _SCRIPT_ID: string = 'agmGoogleMapsApiScript';
   protected readonly callbackName: string = `agmLazyMapsAPILoader`;
 
