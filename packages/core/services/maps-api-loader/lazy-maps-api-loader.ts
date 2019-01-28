@@ -1,8 +1,9 @@
-import {Inject, Injectable, InjectionToken, Optional} from '@angular/core';
+import { Inject, Injectable, InjectionToken, Optional, PLATFORM_ID } from '@angular/core';
 
 import {DocumentRef, WindowRef} from '../../utils/browser-globals';
 
 import {MapsAPILoader} from './maps-api-loader';
+import { isPlatformBrowser } from '@angular/common';
 
 export enum GoogleMapsScriptProtocol {
   HTTP = 1,
@@ -84,17 +85,22 @@ export class LazyMapsAPILoader extends MapsAPILoader {
   protected _config: LazyMapsAPILoaderConfigLiteral;
   protected _windowRef: WindowRef;
   protected _documentRef: DocumentRef;
+  protected _platformId: Object,
   protected readonly _SCRIPT_ID: string = 'agmGoogleMapsApiScript';
   protected readonly callbackName: string = `agmLazyMapsAPILoader`;
 
-  constructor(@Optional() @Inject(LAZY_MAPS_API_CONFIG) config: any = null, w: WindowRef, d: DocumentRef) {
+  constructor(@Optional() @Inject(LAZY_MAPS_API_CONFIG) config: any = null, w: WindowRef, d: DocumentRef, @Inject(PLATFORM_ID) p: Object) {
     super();
     this._config = config || {};
     this._windowRef = w;
     this._documentRef = d;
+    this._platformId = p;
   }
 
   load(): Promise<void> {
+
+    if (!isPlatformBrowser(this._platformId)) { return Promise.reject(); }
+
     const window = <any>this._windowRef.getNativeWindow();
     if (window.google && window.google.maps) {
       // Google maps already loaded on the page.
