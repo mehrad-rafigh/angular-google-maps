@@ -1,4 +1,5 @@
-import { Component, ElementRef, EventEmitter, OnChanges, OnDestroy, OnInit, SimpleChanges, Input, Output } from '@angular/core';
+import {Component, ElementRef, EventEmitter, OnChanges, OnDestroy, OnInit, SimpleChanges, Input, Output, Inject, PLATFORM_ID} from '@angular/core';
+import {isPlatformBrowser} from '@angular/common';
 import {Subscription} from 'rxjs';
 
 import {MouseEvent} from '../map-types';
@@ -100,7 +101,7 @@ export class AgmMap implements OnChanges, OnInit, OnDestroy {
   /**
    * Enables/disables if map is draggable.
    */
-  // tslint:disable-next-line:no-input-rename
+    // tslint:disable-next-line:no-input-rename
   @Input('mapDraggable') draggable: boolean = true;
 
   /**
@@ -323,13 +324,23 @@ export class AgmMap implements OnChanges, OnInit, OnDestroy {
    */
   @Output() mapReady: EventEmitter<any> = new EventEmitter<any>();
 
-  constructor(private _elem: ElementRef, private _mapsWrapper: GoogleMapsAPIWrapper, protected _fitBoundsService: FitBoundsService) {}
+  /**
+   * This checks the platform we are running in, and, only initMapInstance
+   * if isBrowser.
+   */
+  isBrowser: boolean;
+
+  constructor(private _elem: ElementRef, private _mapsWrapper: GoogleMapsAPIWrapper, protected _fitBoundsService: FitBoundsService, @Inject(PLATFORM_ID) platformId: Object) {
+    this.isBrowser = isPlatformBrowser(platformId);
+  }
 
   /** @internal */
   ngOnInit() {
-    // todo: this should be solved with a new component and a viewChild decorator
-    const container = this._elem.nativeElement.querySelector('.agm-map-container-inner');
-    this._initMapInstance(container);
+    if (this.isBrowser) {
+      // todo: this should be solved with a new component and a viewChild decorator
+      const container = this._elem.nativeElement.querySelector('.agm-map-container-inner');
+      this._initMapInstance(container);
+    }
   }
 
   private _initMapInstance(el: HTMLElement) {
@@ -398,7 +409,7 @@ export class AgmMap implements OnChanges, OnInit, OnDestroy {
   private _updateMapOptionsChanges(changes: SimpleChanges) {
     let options: {[propName: string]: any} = {};
     let optionKeys =
-        Object.keys(changes).filter(k => AgmMap._mapOptionsAttributes.indexOf(k) !== -1);
+      Object.keys(changes).filter(k => AgmMap._mapOptionsAttributes.indexOf(k) !== -1);
     optionKeys.forEach((k) => { options[k] = changes[k].currentValue; });
     this._mapsWrapper.setMapOptions(options);
   }
@@ -426,7 +437,7 @@ export class AgmMap implements OnChanges, OnInit, OnDestroy {
 
   private _updatePosition(changes: SimpleChanges) {
     if (changes['latitude'] == null && changes['longitude'] == null &&
-        !changes['fitBounds']) {
+      !changes['fitBounds']) {
       // no position update needed
       return;
     }
@@ -459,14 +470,14 @@ export class AgmMap implements OnChanges, OnInit, OnDestroy {
     switch (this.fitBounds) {
       case true:
         this._subscribeToFitBoundsUpdates();
-      break;
+        break;
       case false:
         if (this._fitBoundsSubscription) {
           this._fitBoundsSubscription.unsubscribe();
         }
-       break;
-       default:
-       this._updateBounds(this.fitBounds);
+        break;
+      default:
+        this._updateBounds(this.fitBounds);
     }
   }
 
@@ -505,7 +516,7 @@ export class AgmMap implements OnChanges, OnInit, OnDestroy {
   private _handleBoundsChange() {
     const s = this._mapsWrapper.subscribeToMapEvent<void>('bounds_changed').subscribe(() => {
       this._mapsWrapper.getBounds().then(
-          (bounds: LatLngBounds) => { this.boundsChange.emit(bounds); });
+        (bounds: LatLngBounds) => { this.boundsChange.emit(bounds); });
     });
     this._observableSubscriptions.push(s);
   }
@@ -513,7 +524,7 @@ export class AgmMap implements OnChanges, OnInit, OnDestroy {
   private _handleMapTypeIdChange() {
     const s = this._mapsWrapper.subscribeToMapEvent<void>('maptypeid_changed').subscribe(() => {
       this._mapsWrapper.getMapTypeId().then(
-          (mapTypeId: MapTypeId) => { this.mapTypeIdChange.emit(mapTypeId); });
+        (mapTypeId: MapTypeId) => { this.mapTypeIdChange.emit(mapTypeId); });
     });
     this._observableSubscriptions.push(s);
   }
@@ -530,7 +541,7 @@ export class AgmMap implements OnChanges, OnInit, OnDestroy {
 
   private _handleIdleEvent() {
     const s = this._mapsWrapper.subscribeToMapEvent<void>('idle').subscribe(
-        () => { this.idle.emit(void 0); });
+      () => { this.idle.emit(void 0); });
     this._observableSubscriptions.push(s);
   }
 
@@ -548,10 +559,10 @@ export class AgmMap implements OnChanges, OnInit, OnDestroy {
 
     events.forEach((e: Event) => {
       const s = this._mapsWrapper.subscribeToMapEvent<{latLng: LatLng}>(e.name).subscribe(
-          (event: {latLng: LatLng}) => {
-            const value = <MouseEvent>{coords: {lat: event.latLng.lat(), lng: event.latLng.lng()}};
-            e.emitter.emit(value);
-          });
+        (event: {latLng: LatLng}) => {
+          const value = <MouseEvent>{coords: {lat: event.latLng.lat(), lng: event.latLng.lng()}};
+          e.emitter.emit(value);
+        });
       this._observableSubscriptions.push(s);
     });
   }
