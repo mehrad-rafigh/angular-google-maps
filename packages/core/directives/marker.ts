@@ -41,7 +41,7 @@ let markerId = 0;
     'latitude', 'longitude', 'title', 'label', 'draggable: markerDraggable', 'iconUrl',
     'openInfoWindow', 'opacity', 'visible', 'zIndex', 'animation'
   ],
-  outputs: ['markerClick', 'dragEnd', 'mouseOver', 'mouseOut']
+  outputs: ['markerClick', 'dragStart', 'drag', 'dragEnd', 'mouseOver', 'mouseOut']
 })
 export class AgmMarker implements OnDestroy, OnChanges, AfterContentInit, FitBoundsAccessor {
   /**
@@ -108,7 +108,14 @@ export class AgmMarker implements OnDestroy, OnChanges, AfterContentInit, FitBou
    * Which animation to play when marker is added to a map.
    * This can be 'BOUNCE' or 'DROP'
    */
-  animation: 'BOUNCE' | 'DROP' | null;
+  @Input() animation: Animation;
+
+  /**
+   * This event is fired when the marker's animation property changes.
+   *
+   * @memberof AgmMarker
+   */
+  @Output() animationChange = new EventEmitter<Animation>();
 
   /**
    * This event emitter gets emitted when the user clicks on the marker.
@@ -145,9 +152,7 @@ export class AgmMarker implements OnDestroy, OnChanges, AfterContentInit, FitBou
    */
   @Output() mouseOut: EventEmitter<MouseEvent> = new EventEmitter<MouseEvent>();
 
-  /**
-   * @internal
-   */
+  /** @internal */
   @ContentChildren(AgmInfoWindow) infoWindow: QueryList<AgmInfoWindow> = new QueryList<AgmInfoWindow>();
 
   private _markerAddedToManger: boolean = false;
@@ -224,9 +229,7 @@ export class AgmMarker implements OnDestroy, OnChanges, AfterContentInit, FitBou
     }
   }
 
-  /**
-   * @internal
-   */
+  /** @internal */
   getFitBoundsDetails$(): Observable<FitBoundsDetails> {
     return this._fitBoundsDetails$.asObservable();
   }
@@ -283,6 +286,13 @@ export class AgmMarker implements OnDestroy, OnChanges, AfterContentInit, FitBou
               this.mouseOut.emit(<MouseEvent>{coords: {lat: e.latLng.lat(), lng: e.latLng.lng()}});
             });
     this._observableSubscriptions.push(mout);
+
+    const anChng =
+        this._markerManager.createEventObservable<void>('animation_changed', this)
+            .subscribe(() => {
+              this.animationChange.emit(this.animation);
+            });
+    this._observableSubscriptions.push(anChng);
   }
 
   /** @internal */
@@ -298,3 +308,5 @@ export class AgmMarker implements OnDestroy, OnChanges, AfterContentInit, FitBou
     this._observableSubscriptions.forEach((s) => s.unsubscribe());
   }
 }
+
+export type Animation = 'BOUNCE' | 'DROP' | null;
